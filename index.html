@@ -1,0 +1,1338 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MediVault — Doctor's Digital Library</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --navy:        #0a1628;
+  --navy-mid:    #112240;
+  --navy-light:  #1e3a5f;
+  --teal:        #00bfa6;
+  --teal-dim:    #00876e;
+  --gold:        #f0c060;
+  --text:        #e8eaf0;
+  --text-dim:    #8a9bb5;
+  --glass:       rgba(255,255,255,0.05);
+  --glass-border:rgba(255,255,255,0.08);
+  --danger:      #ff5c5c;
+  --success:     #00bfa6;
+  --radius:      12px;
+}
+
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--navy);
+  color: var(--text);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 80% 60% at 10% 20%, rgba(0,191,166,0.07) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 80% at 90% 80%, rgba(240,192,96,0.05) 0%, transparent 60%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+a { color: inherit; text-decoration: none; }
+
+/* ── PAGE SYSTEM ── */
+.page { display: none; }
+.page.active { display: block; }
+
+/* ── AUTH ── */
+.auth-page {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  position: relative;
+  z-index: 1;
+}
+
+.auth-card {
+  background: var(--navy-mid);
+  border: 1px solid var(--glass-border);
+  border-radius: 20px;
+  padding: 44px 40px;
+  width: 440px;
+  max-width: 94vw;
+  animation: fadeUp 0.5s ease both;
+}
+
+.auth-logo {
+  font-family: 'Playfair Display', serif;
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--teal);
+  margin-bottom: 4px;
+}
+.auth-tagline { font-size: 13px; color: var(--text-dim); margin-bottom: 32px; }
+.auth-title   { font-family: 'Playfair Display', serif; font-size: 22px; font-weight: 600; margin-bottom: 22px; }
+.auth-switch  { text-align: center; margin-top: 20px; font-size: 13px; color: var(--text-dim); }
+.auth-switch a { color: var(--teal); cursor: pointer; }
+
+/* ── FORMS ── */
+.form-group { margin-bottom: 16px; }
+.form-label { font-size: 11px; color: var(--text-dim); font-weight: 600; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 7px; display: block; }
+
+.form-input, .form-select {
+  width: 100%;
+  background: var(--glass);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius);
+  padding: 12px 16px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 14px;
+  color: var(--text);
+  outline: none;
+  transition: border-color 0.2s;
+}
+.form-input:focus, .form-select:focus { border-color: var(--teal); }
+.form-input::placeholder { color: var(--text-dim); }
+.form-select option { background: var(--navy-mid); }
+textarea.form-input { resize: vertical; }
+
+/* ── BUTTONS ── */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 24px;
+  border-radius: var(--radius);
+  border: none;
+  cursor: pointer;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  transition: all 0.2s;
+  text-decoration: none;
+}
+.btn-primary  { background: var(--teal); color: var(--navy); }
+.btn-primary:hover { background: #00d4b8; transform: translateY(-1px); }
+.btn-full { width: 100%; }
+.btn-ghost { background: var(--glass); border: 1px solid var(--glass-border); color: var(--text); }
+.btn-ghost:hover { background: rgba(255,255,255,0.09); }
+.btn-danger { background: rgba(255,92,92,0.15); border: 1px solid rgba(255,92,92,0.3); color: var(--danger); }
+.btn-danger:hover { background: rgba(255,92,92,0.25); }
+.btn-sm { padding: 8px 16px; font-size: 12px; }
+
+/* ── ALERTS ── */
+.alert {
+  padding: 12px 16px;
+  border-radius: var(--radius);
+  font-size: 13px;
+  margin-bottom: 16px;
+}
+.alert-error   { background: rgba(255,92,92,0.12); border: 1px solid rgba(255,92,92,0.3); color: #ff8a8a; }
+.alert-success { background: rgba(0,191,166,0.12); border: 1px solid rgba(0,191,166,0.3); color: var(--teal); }
+
+/* ── APP LAYOUT ── */
+.layout { display: flex; min-height: 100vh; }
+
+.sidebar {
+  position: fixed;
+  left: 0; top: 0; bottom: 0;
+  width: 260px;
+  background: var(--navy-mid);
+  border-right: 1px solid var(--glass-border);
+  display: flex;
+  flex-direction: column;
+  z-index: 100;
+  padding: 28px 0;
+}
+
+.logo { padding: 0 24px 24px; border-bottom: 1px solid var(--glass-border); }
+.logo-mark { font-family: 'Playfair Display', serif; font-size: 22px; font-weight: 700; color: var(--teal); display: block; cursor: pointer; }
+.logo-sub  { font-size: 10px; color: var(--text-dim); letter-spacing: 2px; text-transform: uppercase; margin-top: 2px; }
+
+.nav { padding: 16px 12px; flex: 1; display: flex; flex-direction: column; gap: 2px; overflow-y: auto; }
+.nav-section { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--text-dim); padding: 12px 12px 5px; margin-top: 6px; }
+.nav-item {
+  display: flex; align-items: center; gap: 11px;
+  padding: 10px 14px; border-radius: 10px; cursor: pointer;
+  font-size: 13.5px; color: var(--text-dim); font-weight: 400;
+  border: 1px solid transparent; transition: all 0.18s;
+}
+.nav-item:hover { background: var(--glass); color: var(--text); }
+.nav-item.active { background: rgba(0,191,166,0.12); color: var(--teal); border-color: rgba(0,191,166,0.2); font-weight: 500; }
+.nav-item .icon { font-size: 17px; width: 20px; text-align: center; }
+
+.sidebar-footer {
+  padding: 18px 20px 0;
+  border-top: 1px solid var(--glass-border);
+}
+.doctor-card   { display: flex; align-items: center; gap: 11px; }
+.doctor-avatar {
+  width: 38px; height: 38px; border-radius: 50%;
+  background: linear-gradient(135deg, var(--teal), var(--teal-dim));
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px; font-weight: 700; color: var(--navy); flex-shrink: 0;
+}
+.doctor-name { font-size: 13px; font-weight: 600; }
+.doctor-role { font-size: 11px; color: var(--text-dim); }
+.logout-link { display: block; margin-top: 12px; font-size: 12px; color: var(--text-dim); transition: color 0.2s; cursor: pointer; }
+.logout-link:hover { color: var(--danger); }
+
+.main { margin-left: 260px; min-height: 100vh; position: relative; z-index: 1; }
+
+.topbar {
+  display: flex; align-items: center; gap: 14px;
+  padding: 18px 32px;
+  border-bottom: 1px solid var(--glass-border);
+  background: rgba(10,22,40,0.7);
+  backdrop-filter: blur(12px);
+  position: sticky; top: 0; z-index: 50;
+}
+
+.search-wrap { flex: 1; max-width: 480px; position: relative; }
+.search-icon { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--text-dim); }
+.search-input {
+  width: 100%;
+  background: var(--glass);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius);
+  padding: 10px 16px 10px 40px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px; color: var(--text); outline: none;
+}
+.search-input:focus { border-color: var(--teal); }
+.search-input::placeholder { color: var(--text-dim); }
+
+.topbar-right { margin-left: auto; display: flex; gap: 10px; align-items: center; }
+.topbar-title { font-family: 'Playfair Display', serif; font-size: 20px; font-weight: 600; }
+
+.content { padding: 28px 32px; }
+
+/* ── STATS ── */
+.stats-row { display: grid; grid-template-columns: repeat(4,1fr); gap: 14px; margin-bottom: 28px; }
+.stat-card {
+  background: var(--glass);
+  border: 1px solid var(--glass-border);
+  border-radius: 14px; padding: 18px;
+  display: flex; align-items: center; gap: 14px;
+  transition: transform 0.2s, border-color 0.2s;
+  animation: fadeUp 0.4s ease both;
+}
+.stat-card:hover { transform: translateY(-2px); border-color: rgba(0,191,166,0.25); }
+.stat-icon { width: 44px; height: 44px; border-radius: 11px; display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0; }
+.stat-value { font-size: 24px; font-weight: 700; font-family: 'Playfair Display', serif; }
+.stat-label { font-size: 12px; color: var(--text-dim); margin-top: 1px; }
+
+/* ── LIBRARY GRID ── */
+.section-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+.section-title { font-family: 'Playfair Display', serif; font-size: 20px; font-weight: 600; }
+
+.library-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(195px, 1fr)); gap: 14px; margin-bottom: 32px; }
+
+.item-card {
+  background: var(--navy-mid);
+  border: 1px solid var(--glass-border);
+  border-radius: 14px; overflow: hidden; cursor: pointer;
+  transition: all 0.22s;
+  animation: fadeUp 0.4s ease both;
+}
+.item-card:hover { transform: translateY(-4px); border-color: rgba(0,191,166,0.3); box-shadow: 0 12px 40px rgba(0,0,0,0.3); }
+
+.item-thumb {
+  height: 120px; display: flex; align-items: center;
+  justify-content: center; font-size: 38px; position: relative; overflow: hidden;
+}
+.item-thumb::after {
+  content: ''; position: absolute; inset: 0;
+  background: linear-gradient(180deg, transparent 50%, rgba(10,22,40,0.8) 100%);
+}
+
+.type-badge {
+  position: absolute; top: 9px; right: 9px;
+  font-size: 9px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase;
+  padding: 3px 8px; border-radius: 6px; z-index: 1;
+}
+
+.item-info { padding: 13px; }
+.item-title {
+  font-size: 12.5px; font-weight: 600; line-height: 1.4; margin-bottom: 4px;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
+.item-meta { font-size: 11px; color: var(--text-dim); display: flex; align-items: center; gap: 6px; }
+.item-actions { display: flex; gap: 5px; margin-top: 10px; }
+
+.mini-btn {
+  flex: 1; padding: 6px 4px; border-radius: 7px;
+  border: 1px solid var(--glass-border); background: var(--glass);
+  color: var(--text-dim); font-size: 11px; font-family: 'DM Sans', sans-serif;
+  cursor: pointer; text-align: center; transition: all 0.18s; font-weight: 500;
+}
+.mini-btn:hover { color: var(--teal); border-color: var(--teal); }
+.mini-btn.open { color: var(--navy); background: var(--teal); border-color: var(--teal); }
+.mini-btn.bookmarked { color: var(--gold); border-color: var(--gold); }
+
+/* ── PANELS ── */
+.two-col { display: grid; grid-template-columns: 1fr 320px; gap: 18px; margin-bottom: 28px; }
+.panel { background: var(--navy-mid); border: 1px solid var(--glass-border); border-radius: 16px; padding: 20px; }
+.panel-title { font-family: 'Playfair Display', serif; font-size: 17px; font-weight: 600; margin-bottom: 14px; }
+
+.activity-item { display: flex; align-items: center; gap: 12px; padding: 9px 0; border-bottom: 1px solid var(--glass-border); }
+.activity-item:last-child { border-bottom: none; }
+.activity-icon { width: 34px; height: 34px; border-radius: 9px; display: flex; align-items: center; justify-content: center; font-size: 15px; flex-shrink: 0; }
+.activity-name { font-size: 12.5px; font-weight: 500; }
+.activity-time { font-size: 11px; color: var(--text-dim); }
+.activity-progress { margin-left: auto; font-size: 12px; color: var(--teal); font-weight: 600; }
+
+.quick-action {
+  display: flex; align-items: center; gap: 11px;
+  padding: 11px 12px; border-radius: 10px;
+  border: 1px solid var(--glass-border); background: var(--glass);
+  cursor: pointer; transition: all 0.18s; margin-bottom: 7px;
+}
+.quick-action:hover { border-color: rgba(0,191,166,0.3); background: rgba(0,191,166,0.06); }
+.quick-action-icon { font-size: 20px; }
+.quick-action-label { font-size: 13px; font-weight: 500; }
+.quick-action-desc  { font-size: 11px; color: var(--text-dim); }
+
+/* ── FILTERS ── */
+.filters { display: flex; gap: 8px; margin-bottom: 18px; flex-wrap: wrap; }
+.filter-btn {
+  padding: 6px 15px; border-radius: 20px;
+  border: 1px solid var(--glass-border); background: var(--glass);
+  color: var(--text-dim); font-size: 12px; font-family: 'DM Sans', sans-serif;
+  cursor: pointer; transition: all 0.18s; font-weight: 500;
+}
+.filter-btn:hover { color: var(--text); }
+.filter-btn.active { background: rgba(0,191,166,0.15); border-color: var(--teal); color: var(--teal); }
+
+/* ── UPLOAD ── */
+.upload-zone {
+  border: 2px dashed var(--glass-border);
+  border-radius: 16px; padding: 48px;
+  text-align: center; cursor: pointer;
+  transition: all 0.2s; margin-bottom: 24px;
+}
+.upload-zone:hover, .upload-zone.drag { border-color: var(--teal); background: rgba(0,191,166,0.04); }
+.upload-emoji { font-size: 44px; margin-bottom: 10px; }
+.upload-label { font-size: 15px; font-weight: 500; margin-bottom: 5px; }
+.upload-hint  { font-size: 12px; color: var(--text-dim); }
+
+/* ── EMPTY STATE ── */
+.empty-state { text-align: center; padding: 60px 20px; color: var(--text-dim); }
+.empty-state-icon { font-size: 48px; margin-bottom: 12px; }
+.empty-state-text { font-size: 15px; margin-bottom: 16px; }
+
+/* ── ADMIN TABLE ── */
+.data-table { width: 100%; border-collapse: collapse; }
+.data-table th { font-size: 11px; color: var(--text-dim); letter-spacing: 1px; text-transform: uppercase; padding: 10px 14px; text-align: left; border-bottom: 1px solid var(--glass-border); }
+.data-table td { padding: 12px 14px; font-size: 13px; border-bottom: 1px solid rgba(255,255,255,0.04); }
+.data-table tr:hover td { background: var(--glass); }
+
+/* ── VIEWER ── */
+.viewer-area { height: calc(100vh - 73px); background: #000; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 20px; }
+.viewer-placeholder { text-align: center; padding: 40px; color: var(--text-dim); }
+.viewer-placeholder .big-icon { font-size: 72px; margin-bottom: 16px; }
+.viewer-placeholder h2 { font-family: 'Playfair Display', serif; font-size: 22px; color: var(--text); margin-bottom: 8px; }
+.viewer-placeholder p { font-size: 13px; max-width: 400px; margin: 0 auto 20px; }
+
+/* ── NOTES ── */
+.note-card { background: var(--navy-mid); border: 1px solid var(--glass-border); border-radius: 14px; padding: 18px; margin-bottom: 14px; }
+.note-resource-link { font-size: 13px; color: var(--teal); font-weight: 600; margin-bottom: 10px; display: block; cursor: pointer; }
+.note-content { font-size: 13.5px; line-height: 1.6; white-space: pre-wrap; }
+.note-date { font-size: 11px; color: var(--text-dim); }
+
+/* ── MODAL ── */
+.modal-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.7);
+  display: none; align-items: center; justify-content: center;
+  z-index: 1000; backdrop-filter: blur(4px);
+}
+.modal-overlay.open { display: flex; }
+.modal {
+  background: var(--navy-mid);
+  border: 1px solid var(--glass-border);
+  border-radius: 20px;
+  padding: 32px;
+  width: 480px;
+  max-width: 94vw;
+  animation: fadeUp 0.3s ease;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+.modal-title { font-family: 'Playfair Display', serif; font-size: 20px; font-weight: 600; margin-bottom: 20px; }
+.modal-close { float: right; cursor: pointer; font-size: 20px; color: var(--text-dim); margin-top: -4px; }
+.modal-close:hover { color: var(--text); }
+
+/* ── TOAST ── */
+.toast {
+  position: fixed; bottom: 24px; right: 24px;
+  background: var(--navy-mid); border: 1px solid var(--glass-border);
+  border-radius: 12px; padding: 14px 20px;
+  font-size: 13px; z-index: 9999;
+  animation: slideIn 0.3s ease;
+  display: none;
+}
+.toast.show { display: flex; align-items: center; gap: 10px; }
+.toast.success { border-color: rgba(0,191,166,0.4); }
+.toast.error   { border-color: rgba(255,92,92,0.4); }
+
+/* ── ANIMATIONS ── */
+@keyframes fadeUp { from { opacity:0; transform:translateY(14px); } to { opacity:1; transform:translateY(0); } }
+@keyframes slideIn { from { opacity:0; transform:translateX(20px); } to { opacity:1; transform:translateX(0); } }
+
+/* ── SCROLLBAR ── */
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--navy-light); border-radius: 3px; }
+
+/* ── RESPONSIVE ── */
+@media (max-width: 900px) {
+  .sidebar { transform: translateX(-100%); }
+  .main { margin-left: 0; }
+  .stats-row { grid-template-columns: repeat(2,1fr); }
+  .two-col { grid-template-columns: 1fr; }
+}
+
+.tag-chip {
+  display: inline-block; padding: 2px 8px; border-radius: 20px;
+  font-size: 10px; background: rgba(0,191,166,0.1); color: var(--teal);
+  border: 1px solid rgba(0,191,166,0.2); margin: 2px;
+}
+</style>
+</head>
+<body>
+
+<!-- ══════════════ LOGIN PAGE ══════════════ -->
+<div id="page-login" class="page active">
+  <div class="auth-page">
+    <div class="auth-card">
+      <div class="auth-logo">⚕ MediVault</div>
+      <div class="auth-tagline">Your Personal Medical Library</div>
+      <div class="auth-title">Welcome back</div>
+
+      <div id="login-error" class="alert alert-error" style="display:none"></div>
+
+      <div class="form-group">
+        <label class="form-label">Email Address</label>
+        <input class="form-input" type="email" id="login-email" placeholder="doctor@hospital.com" value="doctor@medivault.com">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Password</label>
+        <input class="form-input" type="password" id="login-password" placeholder="••••••••" value="password">
+      </div>
+      <button class="btn btn-primary btn-full" style="margin-top:8px" onclick="doLogin()">Sign In →</button>
+
+      <div class="auth-switch">
+        Don't have an account? <a onclick="showPage('page-register')">Create one</a>
+      </div>
+      <div style="margin-top:14px;padding:10px;border-radius:8px;background:rgba(240,192,96,0.08);border:1px solid rgba(240,192,96,0.2);font-size:11px;color:var(--text-dim);text-align:center">
+        Demo: use any email · password · or try <strong style="color:var(--gold)">admin@medivault.com</strong> for admin view
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════ REGISTER PAGE ══════════════ -->
+<div id="page-register" class="page">
+  <div class="auth-page">
+    <div class="auth-card">
+      <div class="auth-logo">⚕ MediVault</div>
+      <div class="auth-tagline">Your Personal Medical Library</div>
+      <div class="auth-title">Create your account</div>
+
+      <div id="reg-error"   class="alert alert-error"   style="display:none"></div>
+      <div id="reg-success" class="alert alert-success" style="display:none"></div>
+
+      <div class="form-group">
+        <label class="form-label">Full Name *</label>
+        <input class="form-input" type="text" id="reg-name" placeholder="Dr. Jane Smith">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Email Address *</label>
+        <input class="form-input" type="email" id="reg-email" placeholder="doctor@hospital.com">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Specialty</label>
+        <select class="form-select" id="reg-specialty">
+          <option value="">— Select specialty —</option>
+          <option>Cardiology</option><option>Neurology</option><option>Oncology</option>
+          <option>Radiology</option><option>Surgery</option><option>Pediatrics</option>
+          <option>Psychiatry</option><option>Orthopedics</option><option>Dermatology</option>
+          <option>General Practice</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Password * (min 8 chars)</label>
+        <input class="form-input" type="password" id="reg-password" placeholder="••••••••">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Confirm Password *</label>
+        <input class="form-input" type="password" id="reg-confirm" placeholder="••••••••">
+      </div>
+      <button class="btn btn-primary btn-full" style="margin-top:8px" onclick="doRegister()">Create Account →</button>
+
+      <div class="auth-switch">
+        Already have an account? <a onclick="showPage('page-login')">Sign in</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════ APP SHELL (sidebar + main) ══════════════ -->
+<div id="page-app" class="page">
+  <div class="layout">
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+      <div class="logo">
+        <a class="logo-mark" onclick="navTo('dashboard')">⚕ MediVault</a>
+        <div class="logo-sub">Medical Library</div>
+      </div>
+
+      <nav class="nav">
+        <div class="nav-section">Library</div>
+        <a class="nav-item" data-nav="dashboard" onclick="navTo('dashboard')"><span class="icon">🏛️</span> All Resources</a>
+        <a class="nav-item" data-nav="lib-pdf"   onclick="navTo('lib-pdf')"><span class="icon">📄</span> PDFs & Documents</a>
+        <a class="nav-item" data-nav="lib-book"  onclick="navTo('lib-book')"><span class="icon">📚</span> Books</a>
+        <a class="nav-item" data-nav="lib-video" onclick="navTo('lib-video')"><span class="icon">🎬</span> Videos</a>
+        <a class="nav-item" data-nav="lib-audio" onclick="navTo('lib-audio')"><span class="icon">🎧</span> Audio & Podcasts</a>
+        <a class="nav-item" data-nav="lib-dicom" onclick="navTo('lib-dicom')"><span class="icon">🩻</span> Medical Imaging</a>
+        <a class="nav-item" data-nav="lib-article" onclick="navTo('lib-article')"><span class="icon">🔬</span> Research Articles</a>
+
+        <div class="nav-section">Workspace</div>
+        <a class="nav-item" data-nav="bookmarks" onclick="navTo('bookmarks')"><span class="icon">🔖</span> Bookmarks</a>
+        <a class="nav-item" data-nav="notes"     onclick="navTo('notes')"><span class="icon">📝</span> My Notes</a>
+        <a class="nav-item" data-nav="upload"    onclick="navTo('upload')"><span class="icon">📤</span> Upload File</a>
+
+        <div id="admin-nav-section" style="display:none">
+          <div class="nav-section">Admin</div>
+          <a class="nav-item" data-nav="admin" onclick="navTo('admin')"><span class="icon">⚙️</span> Admin Panel</a>
+        </div>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="doctor-card">
+          <div class="doctor-avatar" id="sidebar-avatar">DR</div>
+          <div>
+            <div class="doctor-name" id="sidebar-name">Dr. User</div>
+            <div class="doctor-role" id="sidebar-role">Doctor</div>
+          </div>
+        </div>
+        <a class="logout-link" onclick="doLogout()">Sign Out</a>
+      </div>
+    </aside>
+
+    <!-- MAIN CONTENT -->
+    <main class="main">
+
+      <!-- DASHBOARD -->
+      <div id="view-dashboard" class="app-view">
+        <header class="topbar">
+          <div class="search-wrap">
+            <span class="search-icon">🔍</span>
+            <input class="search-input" type="text" placeholder="Search your library..." oninput="liveSearch(this.value)">
+          </div>
+          <div class="topbar-right">
+            <button class="btn btn-primary btn-sm" onclick="navTo('upload')">＋ Upload File</button>
+          </div>
+        </header>
+        <div class="content">
+          <div class="stats-row" id="dash-stats"></div>
+          <div class="two-col">
+            <div class="panel">
+              <div class="panel-title">Recently Accessed</div>
+              <div id="recent-list"></div>
+            </div>
+            <div class="panel">
+              <div class="panel-title">Quick Actions</div>
+              <div class="quick-action" onclick="navTo('upload')">
+                <div class="quick-action-icon">📤</div>
+                <div><div class="quick-action-label">Upload New File</div><div class="quick-action-desc">PDF, video, audio, DICOM & more</div></div>
+              </div>
+              <div class="quick-action" onclick="navTo('bookmarks')">
+                <div class="quick-action-icon">🔖</div>
+                <div><div class="quick-action-label">Bookmarks</div><div class="quick-action-desc">Your saved resources</div></div>
+              </div>
+              <div class="quick-action" onclick="navTo('notes')">
+                <div class="quick-action-icon">📝</div>
+                <div><div class="quick-action-label">My Notes</div><div class="quick-action-desc">Annotations & highlights</div></div>
+              </div>
+            </div>
+          </div>
+          <div class="section-head">
+            <div class="section-title">All Resources <span style="color:var(--text-dim);font-size:15px" id="dash-count"></span></div>
+          </div>
+          <div class="filters" id="dash-filters"></div>
+          <div class="library-grid" id="dash-grid"></div>
+          <div id="dash-empty" class="empty-state" style="display:none">
+            <div class="empty-state-icon">📂</div>
+            <div class="empty-state-text">Your library is empty. Upload your first resource!</div>
+            <button class="btn btn-primary" style="width:auto;margin:0 auto" onclick="navTo('upload')">＋ Upload File</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- LIBRARY (filtered) -->
+      <div id="view-library" class="app-view" style="display:none">
+        <header class="topbar">
+          <div class="search-wrap">
+            <span class="search-icon">🔍</span>
+            <input class="search-input" type="text" placeholder="Search..." oninput="liveSearch(this.value)">
+          </div>
+          <div class="topbar-right">
+            <button class="btn btn-primary btn-sm" onclick="navTo('upload')">＋ Upload</button>
+          </div>
+        </header>
+        <div class="content">
+          <div class="section-head">
+            <div class="section-title" id="lib-title">Library</div>
+          </div>
+          <div class="library-grid" id="lib-grid"></div>
+          <div id="lib-empty" class="empty-state" style="display:none">
+            <div class="empty-state-icon">📂</div>
+            <div class="empty-state-text" id="lib-empty-text">No items found.</div>
+            <button class="btn btn-primary" style="width:auto;margin:0 auto" onclick="navTo('upload')">＋ Upload</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- UPLOAD -->
+      <div id="view-upload" class="app-view" style="display:none">
+        <header class="topbar">
+          <div class="topbar-title">Upload New Resource</div>
+        </header>
+        <div class="content" style="max-width:700px">
+          <div id="upload-error"   class="alert alert-error"   style="display:none"></div>
+          <div id="upload-success" class="alert alert-success" style="display:none"></div>
+
+          <div class="upload-zone" id="dropZone" onclick="document.getElementById('fileField').click()">
+            <div class="upload-emoji">📂</div>
+            <div class="upload-label">Drop your file here or click to browse</div>
+            <div class="upload-hint">PDF · EPUB · MP4 · MP3 · DICOM · DOCX — up to 500 MB</div>
+          </div>
+          <input type="file" id="fileField" style="display:none" onchange="setFilePreview(this.files[0])">
+          <div id="filePreview" style="display:none;margin-bottom:16px;padding:10px 16px;background:rgba(0,191,166,0.1);border:1px solid rgba(0,191,166,0.3);border-radius:10px;font-size:13px;"></div>
+
+          <div class="form-group">
+            <label class="form-label">Title *</label>
+            <input class="form-input" type="text" id="up-title" placeholder="Resource title">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Category *</label>
+            <select class="form-select" id="up-type">
+              <option value="">— Select category —</option>
+              <option value="pdf">📄 PDF / Document</option>
+              <option value="book">📚 Book / eBook</option>
+              <option value="video">🎬 Video</option>
+              <option value="audio">🎧 Audio / Podcast</option>
+              <option value="dicom">🩻 Medical Imaging (DICOM)</option>
+              <option value="article">🔬 Research Article</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Author / Source</label>
+            <input class="form-input" type="text" id="up-author" placeholder="e.g. Dr. Smith, NEJM, ACC">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Description</label>
+            <textarea class="form-input" id="up-desc" rows="3" placeholder="Brief description or notes..."></textarea>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Tags (comma-separated)</label>
+            <input class="form-input" type="text" id="up-tags" placeholder="cardiology, ecg, guidelines">
+          </div>
+          <div style="display:flex;gap:10px;margin-top:8px">
+            <button class="btn btn-ghost" onclick="navTo('dashboard')">← Back</button>
+            <button class="btn btn-primary" onclick="doUpload()">Upload Resource →</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- VIEW RESOURCE -->
+      <div id="view-resource" class="app-view" style="display:none">
+        <header class="topbar">
+          <button class="btn btn-ghost btn-sm" onclick="history.back ? history.back() : navTo('dashboard')">← Back</button>
+          <div style="flex:1;padding:0 16px">
+            <div style="font-family:'Playfair Display',serif;font-size:17px;font-weight:600" id="res-title-bar">Resource</div>
+            <div style="font-size:12px;color:var(--text-dim)" id="res-author-bar"></div>
+          </div>
+          <div class="topbar-right">
+            <button class="btn btn-ghost btn-sm" onclick="toggleBookmarkCurrent()">🔖 Bookmark</button>
+          </div>
+        </header>
+        <div id="res-viewer-area" class="viewer-area"></div>
+      </div>
+
+      <!-- BOOKMARKS -->
+      <div id="view-bookmarks" class="app-view" style="display:none">
+        <header class="topbar">
+          <div class="topbar-title">🔖 Bookmarks</div>
+          <div class="topbar-right">
+            <div class="search-wrap">
+              <span class="search-icon">🔍</span>
+              <input class="search-input" type="text" placeholder="Search bookmarks..." oninput="liveSearch(this.value)">
+            </div>
+          </div>
+        </header>
+        <div class="content">
+          <div class="library-grid" id="bookmarks-grid"></div>
+          <div id="bookmarks-empty" class="empty-state" style="display:none">
+            <div class="empty-state-icon">🔖</div>
+            <div class="empty-state-text">No bookmarks yet. Open a resource and bookmark it.</div>
+            <button class="btn btn-primary" style="width:auto;margin:0 auto" onclick="navTo('dashboard')">← Back to Library</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- NOTES -->
+      <div id="view-notes" class="app-view" style="display:none">
+        <header class="topbar">
+          <div class="topbar-title">📝 My Notes</div>
+          <div class="topbar-right">
+            <button class="btn btn-primary btn-sm" onclick="openAddNote()">＋ Add Note</button>
+          </div>
+        </header>
+        <div class="content">
+          <div id="notes-list"></div>
+          <div id="notes-empty" class="empty-state" style="display:none">
+            <div class="empty-state-icon">📝</div>
+            <div class="empty-state-text">No notes yet. Add notes while viewing a resource.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ADMIN -->
+      <div id="view-admin" class="app-view" style="display:none">
+        <header class="topbar">
+          <div class="topbar-title">⚙️ Admin Panel</div>
+        </header>
+        <div class="content">
+          <div class="stats-row" style="grid-template-columns:repeat(3,1fr);margin-bottom:28px" id="admin-stats"></div>
+
+          <div class="section-head"><div class="section-title">Registered Users</div></div>
+          <div class="panel" style="margin-bottom:28px;overflow-x:auto">
+            <table class="data-table">
+              <thead><tr><th>Name</th><th>Email</th><th>Specialty</th><th>Role</th><th>Joined</th><th>Actions</th></tr></thead>
+              <tbody id="admin-users-table"></tbody>
+            </table>
+          </div>
+
+          <div class="section-head"><div class="section-title">Recent Uploads</div></div>
+          <div class="panel" style="overflow-x:auto">
+            <table class="data-table">
+              <thead><tr><th>Title</th><th>Type</th><th>Uploaded By</th><th>Size</th><th>Date</th><th>Actions</th></tr></thead>
+              <tbody id="admin-uploads-table"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<!-- ADD NOTE MODAL -->
+<div class="modal-overlay" id="note-modal">
+  <div class="modal">
+    <span class="modal-close" onclick="closeModal('note-modal')">✕</span>
+    <div class="modal-title">Add Note</div>
+    <div class="form-group">
+      <label class="form-label">Resource</label>
+      <select class="form-select" id="note-resource-select"></select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Note</label>
+      <textarea class="form-input" id="note-content" rows="5" placeholder="Write your note here..."></textarea>
+    </div>
+    <div style="display:flex;gap:10px;margin-top:8px">
+      <button class="btn btn-ghost" onclick="closeModal('note-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveNote()">Save Note</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ═══════════════════════════════════════════
+//  STATE
+// ═══════════════════════════════════════════
+let currentUser = null;
+let currentView = 'dashboard';
+let currentViewingResourceId = null;
+
+const TYPE_CONFIG = {
+  pdf:     { label:'PDF',     icon:'📄', color:'#00bfa6', bg:'rgba(0,191,166,0.12)',   thumb:'linear-gradient(135deg,#0d2e2a,#0a1628)' },
+  book:    { label:'Book',    icon:'📚', color:'#f0c060', bg:'rgba(240,192,96,0.12)',   thumb:'linear-gradient(135deg,#2a200a,#0a1628)' },
+  video:   { label:'Video',   icon:'🎬', color:'#6aa0ff', bg:'rgba(100,160,255,0.12)', thumb:'linear-gradient(135deg,#0a1a30,#0a1628)' },
+  audio:   { label:'Audio',   icon:'🎧', color:'#c864ff', bg:'rgba(200,100,255,0.12)', thumb:'linear-gradient(135deg,#1a0a2a,#0a1628)' },
+  dicom:   { label:'DICOM',   icon:'🩻', color:'#ff6a6a', bg:'rgba(255,106,106,0.12)', thumb:'linear-gradient(135deg,#2a0a0a,#0a1628)' },
+  article: { label:'Article', icon:'🔬', color:'#64d8a0', bg:'rgba(100,216,160,0.12)', thumb:'linear-gradient(135deg,#0a2018,#0a1628)' },
+};
+
+// ── Mock data store ──
+const STORE = {
+  users: [
+    { id:1, name:'Dr. Jane Smith', email:'doctor@medivault.com', password:'password', role:'doctor', specialty:'Cardiology', created_at:'2024-01-15' },
+    { id:2, name:'Admin',          email:'admin@medivault.com',  password:'admin',    role:'admin',  specialty:'System Administrator', created_at:'2024-01-01' },
+    { id:3, name:'Dr. Marcus Lee', email:'marcus@medivault.com', password:'password', role:'doctor', specialty:'Neurology', created_at:'2024-02-10' },
+  ],
+  resources: [
+    { id:1, user_id:1, title:'ACC/AHA Guidelines for Hypertension', type:'pdf',     author:'ACC/AHA',        description:'2023 clinical practice guidelines for high blood pressure.', tags:'cardiology,guidelines,hypertension', file_size:3145728,  created_at:'2024-03-01' },
+    { id:2, user_id:1, title:"Harrison's Principles of Internal Medicine", type:'book',  author:'Fauci et al.',   description:'Comprehensive internal medicine reference.', tags:'internal medicine,reference', file_size:52428800, created_at:'2024-03-05' },
+    { id:3, user_id:1, title:'ECG Interpretation Masterclass',       type:'video',   author:'Dr. Smith',      description:'Full ECG reading course for clinicians.', tags:'ecg,cardiology,video', file_size:1073741824,created_at:'2024-03-10' },
+    { id:4, user_id:1, title:'UpToDate Podcast: Heart Failure',      type:'audio',   author:'UpToDate',       description:'Latest heart failure management updates.', tags:'heart failure,podcast', file_size:15728640, created_at:'2024-03-12' },
+    { id:5, user_id:1, title:'Chest CT — Pulmonary Embolism Case',   type:'dicom',   author:'Radiology Dept', description:'DICOM series for educational review.', tags:'dicom,pe,radiology', file_size:209715200,created_at:'2024-03-15' },
+    { id:6, user_id:1, title:'NEJM — SGLT2 Inhibitors Meta-Analysis',type:'article', author:'NEJM',           description:'Systematic review of SGLT2 inhibitor outcomes.', tags:'diabetes,nejm,article', file_size:2097152,  created_at:'2024-03-18' },
+    { id:7, user_id:1, title:'Braunwald\'s Heart Disease',           type:'book',    author:'Braunwald',      description:'Standard cardiology textbook, 12th edition.', tags:'cardiology,textbook', file_size:78643200, created_at:'2024-03-20' },
+    { id:8, user_id:1, title:'AHA Journal — Atrial Fibrillation',    type:'article', author:'AHA Journal',    description:'Comprehensive AFib management review.', tags:'afib,cardiology', file_size:1572864,  created_at:'2024-03-22' },
+  ],
+  bookmarks: [],
+  notes: [
+    { id:1, user_id:1, resource_id:1, content:'Review section 3.2 — JNC 8 vs ACC/AHA thresholds differ. Important for board exams.', created_at:'2024-03-02 10:00:00' },
+    { id:2, user_id:1, resource_id:6, content:'EMPEROR-Reduced trial data is crucial here. SGLT2 inhibitors show 25% HHF reduction.', created_at:'2024-03-19 14:30:00' },
+  ],
+  access_logs: [
+    { user_id:1, resource_id:1, accessed_at:'2024-03-22 09:00:00', progress:65 },
+    { user_id:1, resource_id:3, accessed_at:'2024-03-21 14:30:00', progress:40 },
+    { user_id:1, resource_id:6, accessed_at:'2024-03-20 11:00:00', progress:100 },
+  ],
+  nextId: 9,
+};
+
+// ═══════════════════════════════════════════
+//  AUTH
+// ═══════════════════════════════════════════
+function doLogin() {
+  const email    = document.getElementById('login-email').value.trim();
+  const password = document.getElementById('login-password').value;
+  const errEl    = document.getElementById('login-error');
+
+  if (!email || !password) { showError(errEl, 'Please fill in all fields.'); return; }
+
+  const user = STORE.users.find(u => u.email === email);
+  if (!user) {
+    // In demo: any unknown email creates a doctor session
+    const newUser = { id: STORE.users.length + 1, name: email.split('@')[0], email, password, role:'doctor', specialty:'General Practice', created_at: new Date().toISOString().split('T')[0] };
+    STORE.users.push(newUser);
+    currentUser = newUser;
+  } else {
+    currentUser = user;
+  }
+
+  errEl.style.display = 'none';
+  initApp();
+}
+
+function doRegister() {
+  const name     = document.getElementById('reg-name').value.trim();
+  const email    = document.getElementById('reg-email').value.trim();
+  const specialty= document.getElementById('reg-specialty').value;
+  const password = document.getElementById('reg-password').value;
+  const confirm  = document.getElementById('reg-confirm').value;
+  const errEl    = document.getElementById('reg-error');
+  const sucEl    = document.getElementById('reg-success');
+
+  errEl.style.display = 'none'; sucEl.style.display = 'none';
+
+  if (!name || !email || !password || !confirm)  { showError(errEl, 'Please fill in all required fields.'); return; }
+  if (password.length < 8)                       { showError(errEl, 'Password must be at least 8 characters.'); return; }
+  if (password !== confirm)                      { showError(errEl, 'Passwords do not match.'); return; }
+  if (STORE.users.find(u => u.email === email))  { showError(errEl, 'An account with this email already exists.'); return; }
+
+  STORE.users.push({ id: STORE.users.length + 1, name, email, password, role:'doctor', specialty, created_at: new Date().toISOString().split('T')[0] });
+  sucEl.textContent = 'Account created! You can now sign in.';
+  sucEl.style.display = 'block';
+  setTimeout(() => showPage('page-login'), 1500);
+}
+
+function doLogout() {
+  currentUser = null;
+  showPage('page-login');
+}
+
+function initApp() {
+  showPage('page-app');
+  // Update sidebar
+  document.getElementById('sidebar-avatar').textContent = currentUser.name.substring(0,2).toUpperCase();
+  document.getElementById('sidebar-name').textContent   = currentUser.name;
+  document.getElementById('sidebar-role').textContent   = currentUser.specialty || currentUser.role;
+  // Show admin nav if admin
+  document.getElementById('admin-nav-section').style.display = currentUser.role === 'admin' ? 'block' : 'none';
+  navTo('dashboard');
+}
+
+// ═══════════════════════════════════════════
+//  NAVIGATION
+// ═══════════════════════════════════════════
+function showPage(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function navTo(view) {
+  currentView = view;
+  // Hide all views
+  document.querySelectorAll('.app-view').forEach(v => v.style.display = 'none');
+  // Update nav items
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  const navItem = document.querySelector(`[data-nav="${view}"]`);
+  if (navItem) navItem.classList.add('active');
+  // Lib views
+  const libTypes = ['pdf','book','video','audio','dicom','article'];
+  if (view === 'dashboard')           { renderDashboard(); document.getElementById('view-dashboard').style.display = 'block'; }
+  else if (view.startsWith('lib-'))   { const t = view.replace('lib-',''); renderLibrary(t); document.getElementById('view-library').style.display = 'block'; }
+  else if (view === 'upload')         { resetUpload(); document.getElementById('view-upload').style.display = 'block'; }
+  else if (view === 'bookmarks')      { renderBookmarks(); document.getElementById('view-bookmarks').style.display = 'block'; }
+  else if (view === 'notes')          { renderNotes(); document.getElementById('view-notes').style.display = 'block'; }
+  else if (view === 'admin')          { renderAdmin(); document.getElementById('view-admin').style.display = 'block'; }
+}
+
+function viewResource(id) {
+  const res = STORE.resources.find(r => r.id === id);
+  if (!res) return;
+
+  currentViewingResourceId = id;
+
+  // Log access
+  const existing = STORE.access_logs.find(l => l.user_id === currentUser.id && l.resource_id === id);
+  if (existing) existing.accessed_at = new Date().toISOString().replace('T',' ').substring(0,19);
+  else STORE.access_logs.push({ user_id: currentUser.id, resource_id: id, accessed_at: new Date().toISOString().replace('T',' ').substring(0,19), progress: 0 });
+
+  const cfg = TYPE_CONFIG[res.type];
+
+  document.getElementById('res-title-bar').textContent  = res.title;
+  document.getElementById('res-author-bar').textContent = res.author || '';
+
+  const viewer = document.getElementById('res-viewer-area');
+  viewer.style.background = '#000';
+
+  if (res.type === 'pdf' || res.type === 'article') {
+    viewer.innerHTML = `
+      <div class="viewer-placeholder">
+        <div class="big-icon">${cfg.icon}</div>
+        <h2>${escHtml(res.title)}</h2>
+        <p style="color:var(--text-dim)">${escHtml(res.description || 'No description')}</p>
+        <p style="font-size:12px;color:var(--text-dim);margin-bottom:20px">In a live deployment, this PDF would render inline via an &lt;iframe&gt; or PDF.js viewer.</p>
+        ${tagsHtml(res.tags)}
+      </div>`;
+  } else if (res.type === 'video') {
+    viewer.innerHTML = `
+      <div class="viewer-placeholder">
+        <div class="big-icon">🎬</div>
+        <h2>${escHtml(res.title)}</h2>
+        <p>In a live deployment, the video would stream here using an HTML5 &lt;video&gt; element.</p>
+        <p style="font-size:12px;color:var(--text-dim)">${escHtml(res.author || '')}</p>
+      </div>`;
+  } else if (res.type === 'audio') {
+    viewer.innerHTML = `
+      <div class="viewer-placeholder">
+        <div class="big-icon">🎧</div>
+        <h2>${escHtml(res.title)}</h2>
+        <p>${escHtml(res.author || '')}</p>
+        <p style="font-size:12px;color:var(--text-dim)">In a live deployment, an HTML5 &lt;audio&gt; player would appear here.</p>
+      </div>`;
+  } else if (res.type === 'dicom') {
+    viewer.innerHTML = `
+      <div class="viewer-placeholder">
+        <div class="big-icon">🩻</div>
+        <h2>DICOM Viewer</h2>
+        <p>DICOM files require a dedicated viewer. In a live deployment, download the file and open it with <strong>OsiriX</strong>, <strong>RadiAnt</strong>, or another DICOM-compatible viewer.</p>
+        <button class="btn btn-primary" style="width:auto;margin:0 auto" onclick="toast('📥 Download would start in a live deployment','success')">📥 Download DICOM File</button>
+      </div>`;
+  } else if (res.type === 'book') {
+    viewer.innerHTML = `
+      <div class="viewer-placeholder">
+        <div class="big-icon">📚</div>
+        <h2>${escHtml(res.title)}</h2>
+        <p>Download and open with your preferred eBook reader.</p>
+        <button class="btn btn-primary" style="width:auto;margin:0 auto" onclick="toast('📥 Download would start in a live deployment','success')">📥 Download Book</button>
+      </div>`;
+  }
+
+  document.querySelectorAll('.app-view').forEach(v => v.style.display = 'none');
+  document.getElementById('view-resource').style.display = 'block';
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+}
+
+function toggleBookmarkCurrent() {
+  if (!currentViewingResourceId) return;
+  toggleBookmark(currentViewingResourceId);
+}
+
+// ═══════════════════════════════════════════
+//  RENDER DASHBOARD
+// ═══════════════════════════════════════════
+function renderDashboard() {
+  const myRes = STORE.resources.filter(r => r.user_id === currentUser.id);
+  const counts = {};
+  Object.keys(TYPE_CONFIG).forEach(t => { counts[t] = myRes.filter(r => r.type === t).length; });
+
+  // Stats
+  const statDefs = [['pdf','rgba(0,191,166,0.15)'],['book','rgba(240,192,96,0.15)'],['video','rgba(100,160,255,0.15)'],['dicom','rgba(255,106,106,0.15)']];
+  document.getElementById('dash-stats').innerHTML = statDefs.map(([t,bg]) => `
+    <div class="stat-card">
+      <div class="stat-icon" style="background:${bg}">${TYPE_CONFIG[t].icon}</div>
+      <div>
+        <div class="stat-value">${counts[t]}</div>
+        <div class="stat-label">${TYPE_CONFIG[t].label}s</div>
+      </div>
+    </div>`).join('');
+
+  // Recent
+  const logs = STORE.access_logs.filter(l => l.user_id === currentUser.id)
+    .sort((a,b) => b.accessed_at > a.accessed_at ? 1 : -1).slice(0,5);
+  const recentEl = document.getElementById('recent-list');
+  if (logs.length) {
+    recentEl.innerHTML = logs.map(l => {
+      const r = STORE.resources.find(x => x.id === l.resource_id);
+      if (!r) return '';
+      const cfg = TYPE_CONFIG[r.type];
+      return `<div class="activity-item">
+        <div class="activity-icon" style="background:${cfg.bg}">${cfg.icon}</div>
+        <div>
+          <div class="activity-name">${escHtml(r.title)}</div>
+          <div class="activity-time">${formatDate(l.accessed_at)}</div>
+        </div>
+        <div class="activity-progress">${l.progress}%</div>
+      </div>`;
+    }).join('');
+  } else {
+    recentEl.innerHTML = `<p style="color:var(--text-dim);font-size:13px">No activity yet. Open a resource to begin.</p>`;
+  }
+
+  // Filters
+  document.getElementById('dash-filters').innerHTML = `
+    <button class="filter-btn active" onclick="dashFilter(this,'all')">All</button>
+    ${Object.entries(TYPE_CONFIG).map(([k,v]) => `<button class="filter-btn" onclick="dashFilter(this,'${k}')">${v.icon} ${v.label}</button>`).join('')}`;
+
+  // Grid
+  document.getElementById('dash-count').textContent = `(${myRes.length})`;
+  const grid = document.getElementById('dash-grid');
+  if (myRes.length) {
+    grid.innerHTML = myRes.map((r,i) => resourceCard(r, i)).join('');
+    grid.style.display = '';
+    document.getElementById('dash-empty').style.display = 'none';
+  } else {
+    grid.style.display = 'none';
+    document.getElementById('dash-empty').style.display = 'block';
+  }
+}
+
+function dashFilter(btn, type) {
+  document.querySelectorAll('#dash-filters .filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.querySelectorAll('#dash-grid .item-card').forEach(card => {
+    card.style.display = (type === 'all' || card.dataset.type === type) ? '' : 'none';
+  });
+}
+
+// ═══════════════════════════════════════════
+//  RENDER LIBRARY
+// ═══════════════════════════════════════════
+function renderLibrary(type) {
+  const cfg = TYPE_CONFIG[type];
+  const items = STORE.resources.filter(r => r.user_id === currentUser.id && r.type === type);
+  document.getElementById('lib-title').textContent = `${cfg.label}s (${items.length})`;
+  const grid = document.getElementById('lib-grid');
+  if (items.length) {
+    grid.innerHTML = items.map((r,i) => resourceCard(r, i)).join('');
+    grid.style.display = '';
+    document.getElementById('lib-empty').style.display = 'none';
+  } else {
+    grid.style.display = 'none';
+    document.getElementById('lib-empty-text').textContent = `No ${cfg.label}s yet. Upload your first one!`;
+    document.getElementById('lib-empty').style.display = 'block';
+  }
+}
+
+// ═══════════════════════════════════════════
+//  RESOURCE CARD HTML
+// ═══════════════════════════════════════════
+function resourceCard(r, i) {
+  const cfg = TYPE_CONFIG[r.type];
+  const isBookmarked = STORE.bookmarks.some(b => b.user_id === currentUser.id && b.resource_id === r.id);
+  return `<div class="item-card" data-type="${r.type}" data-title="${escAttr(r.title.toLowerCase())}" data-author="${escAttr((r.author||'').toLowerCase())}" style="animation-delay:${i*0.04}s">
+    <div class="item-thumb" style="background:${cfg.thumb}">
+      <span>${cfg.icon}</span>
+      <div class="type-badge" style="background:${cfg.bg};color:${cfg.color}">${cfg.label}</div>
+    </div>
+    <div class="item-info">
+      <div class="item-title">${escHtml(r.title)}</div>
+      <div class="item-meta">
+        <span>${escHtml(r.author || 'Unknown')}</span>
+        <span>·</span><span>${formatSize(r.file_size)}</span>
+      </div>
+      <div class="item-actions">
+        <button class="mini-btn open" onclick="viewResource(${r.id})">▶ Open</button>
+        <button class="mini-btn ${isBookmarked?'bookmarked':''}" onclick="toggleBookmark(${r.id})" id="bm-btn-${r.id}">🔖</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+// ═══════════════════════════════════════════
+//  BOOKMARKS
+// ═══════════════════════════════════════════
+function toggleBookmark(id) {
+  const idx = STORE.bookmarks.findIndex(b => b.user_id === currentUser.id && b.resource_id === id);
+  if (idx >= 0) {
+    STORE.bookmarks.splice(idx, 1);
+    showToast('Bookmark removed.', 'success');
+  } else {
+    STORE.bookmarks.push({ id: Date.now(), user_id: currentUser.id, resource_id: id, created_at: new Date().toISOString() });
+    showToast('Bookmarked! 🔖', 'success');
+  }
+  // Update button if visible
+  const btn = document.getElementById(`bm-btn-${id}`);
+  if (btn) {
+    const isNow = STORE.bookmarks.some(b => b.user_id === currentUser.id && b.resource_id === id);
+    btn.classList.toggle('bookmarked', isNow);
+  }
+}
+
+function renderBookmarks() {
+  const bms = STORE.bookmarks
+    .filter(b => b.user_id === currentUser.id)
+    .map(b => STORE.resources.find(r => r.id === b.resource_id))
+    .filter(Boolean);
+
+  const grid = document.getElementById('bookmarks-grid');
+  if (bms.length) {
+    grid.innerHTML = bms.map((r,i) => resourceCard(r, i)).join('');
+    grid.style.display = '';
+    document.getElementById('bookmarks-empty').style.display = 'none';
+  } else {
+    grid.style.display = 'none';
+    document.getElementById('bookmarks-empty').style.display = 'block';
+  }
+}
+
+// ═══════════════════════════════════════════
+//  NOTES
+// ═══════════════════════════════════════════
+function renderNotes() {
+  const myNotes = STORE.notes.filter(n => n.user_id === currentUser.id)
+    .sort((a,b) => b.created_at > a.created_at ? 1 : -1);
+
+  const list = document.getElementById('notes-list');
+  if (myNotes.length) {
+    list.innerHTML = myNotes.map(n => {
+      const r = STORE.resources.find(x => x.id === n.resource_id);
+      return `<div class="note-card">
+        <div style="display:flex;align-items:center;margin-bottom:10px">
+          <a class="note-resource-link" onclick="viewResource(${n.resource_id})">📎 ${escHtml(r ? r.title : 'Unknown Resource')}</a>
+          <span style="margin-left:auto;font-size:11px;color:var(--text-dim)">${formatDate(n.created_at)}</span>
+        </div>
+        <p class="note-content">${escHtml(n.content)}</p>
+      </div>`;
+    }).join('');
+    list.style.display = 'block';
+    document.getElementById('notes-empty').style.display = 'none';
+  } else {
+    list.style.display = 'none';
+    document.getElementById('notes-empty').style.display = 'block';
+  }
+}
+
+function openAddNote() {
+  const myRes = STORE.resources.filter(r => r.user_id === currentUser.id);
+  const sel = document.getElementById('note-resource-select');
+  sel.innerHTML = '<option value="">— Select resource —</option>' +
+    myRes.map(r => `<option value="${r.id}">${escHtml(r.title)}</option>`).join('');
+  document.getElementById('note-content').value = '';
+  openModal('note-modal');
+}
+
+function saveNote() {
+  const resourceId = parseInt(document.getElementById('note-resource-select').value);
+  const content    = document.getElementById('note-content').value.trim();
+  if (!resourceId || !content) { showToast('Please select a resource and write a note.', 'error'); return; }
+  STORE.notes.push({ id: Date.now(), user_id: currentUser.id, resource_id: resourceId, content, created_at: new Date().toISOString().replace('T',' ').substring(0,19) });
+  closeModal('note-modal');
+  showToast('Note saved! 📝', 'success');
+  renderNotes();
+}
+
+// ═══════════════════════════════════════════
+//  UPLOAD
+// ═══════════════════════════════════════════
+function resetUpload() {
+  document.getElementById('up-title').value = '';
+  document.getElementById('up-type').value  = '';
+  document.getElementById('up-author').value = '';
+  document.getElementById('up-desc').value  = '';
+  document.getElementById('up-tags').value  = '';
+  document.getElementById('filePreview').style.display = 'none';
+  document.getElementById('upload-error').style.display = 'none';
+  document.getElementById('upload-success').style.display = 'none';
+  document.getElementById('fileField').value = '';
+}
+
+function doUpload() {
+  const title  = document.getElementById('up-title').value.trim();
+  const type   = document.getElementById('up-type').value;
+  const author = document.getElementById('up-author').value.trim();
+  const desc   = document.getElementById('up-desc').value.trim();
+  const tags   = document.getElementById('up-tags').value.trim();
+  const errEl  = document.getElementById('upload-error');
+  const sucEl  = document.getElementById('upload-success');
+
+  errEl.style.display = 'none'; sucEl.style.display = 'none';
+  if (!title || !type) { showError(errEl, 'Please fill in the title and category.'); return; }
+
+  // Simulate upload
+  const fakeSizes = { pdf:3145728, book:52428800, video:314572800, audio:15728640, dicom:209715200, article:1572864 };
+  STORE.resources.unshift({
+    id: STORE.nextId++,
+    user_id: currentUser.id,
+    title, type, author, description: desc, tags,
+    file_size: fakeSizes[type] || 1048576,
+    created_at: new Date().toISOString().split('T')[0],
+  });
+
+  sucEl.textContent = 'Resource uploaded successfully!';
+  sucEl.style.display = 'block';
+  showToast('Resource uploaded! 🎉', 'success');
+  setTimeout(() => navTo('dashboard'), 1500);
+}
+
+function setFilePreview(file) {
+  if (!file) return;
+  const preview = document.getElementById('filePreview');
+  preview.style.display = 'block';
+  preview.textContent = `📎 ${file.name}  (${formatSize(file.size)})`;
+  const titleInput = document.getElementById('up-title');
+  if (!titleInput.value) titleInput.value = file.name.replace(/\.[^.]+$/, '');
+}
+
+// Drag & drop
+const dz = document.getElementById('dropZone');
+if (dz) {
+  dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('drag'); });
+  dz.addEventListener('dragleave', () => dz.classList.remove('drag'));
+  dz.addEventListener('drop', e => { e.preventDefault(); dz.classList.remove('drag'); const f = e.dataTransfer.files[0]; if (f) { document.getElementById('fileField').files; setFilePreview(f); } });
+}
+
+// ═══════════════════════════════════════════
+//  ADMIN
+// ═══════════════════════════════════════════
+function renderAdmin() {
+  const totalSize = STORE.resources.reduce((s,r) => s + (r.file_size||0), 0);
+  document.getElementById('admin-stats').innerHTML = `
+    <div class="stat-card">
+      <div class="stat-icon" style="background:rgba(0,191,166,0.15)">👨‍⚕️</div>
+      <div><div class="stat-value">${STORE.users.length}</div><div class="stat-label">Total Users</div></div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon" style="background:rgba(240,192,96,0.15)">📂</div>
+      <div><div class="stat-value">${STORE.resources.length}</div><div class="stat-label">Total Resources</div></div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon" style="background:rgba(100,160,255,0.15)">💾</div>
+      <div><div class="stat-value">${formatSize(totalSize)}</div><div class="stat-label">Storage Used</div></div>
+    </div>`;
+
+  document.getElementById('admin-users-table').innerHTML = STORE.users.slice(0,20).map(u => `
+    <tr>
+      <td>${escHtml(u.name)}</td>
+      <td style="color:var(--text-dim)">${escHtml(u.email)}</td>
+      <td>${escHtml(u.specialty||'—')}</td>
+      <td><span style="font-size:11px;padding:3px 9px;border-radius:6px;background:${u.role==='admin'?'rgba(240,192,96,0.15)':'rgba(0,191,166,0.1)'};color:${u.role==='admin'?'#f0c060':'var(--teal)'}">${u.role}</span></td>
+      <td style="color:var(--text-dim)">${u.created_at}</td>
+      <td>${u.id !== currentUser.id ? `<button class="btn btn-danger btn-sm" onclick="adminDeleteUser(${u.id})">Delete</button>` : '<span style="font-size:11px;color:var(--text-dim)">You</span>'}</td>
+    </tr>`).join('');
+
+  document.getElementById('admin-uploads-table').innerHTML = STORE.resources.slice(0,15).map(r => {
+    const user = STORE.users.find(u => u.id === r.user_id);
+    return `<tr>
+      <td>${escHtml(r.title)}</td>
+      <td style="text-transform:uppercase;font-size:11px;color:var(--text-dim)">${r.type}</td>
+      <td>${escHtml(user ? user.name : 'Unknown')}</td>
+      <td style="color:var(--text-dim)">${formatSize(r.file_size)}</td>
+      <td style="color:var(--text-dim)">${r.created_at}</td>
+      <td><button class="btn btn-danger btn-sm" onclick="adminDeleteResource(${r.id})">Delete</button></td>
+    </tr>`;
+  }).join('');
+}
+
+function adminDeleteUser(id) {
+  if (!confirm('Delete this user and all their files?')) return;
+  const idx = STORE.users.findIndex(u => u.id === id);
+  if (idx >= 0) { STORE.users.splice(idx, 1); showToast('User deleted.', 'success'); renderAdmin(); }
+}
+
+function adminDeleteResource(id) {
+  if (!confirm('Delete this resource?')) return;
+  const idx = STORE.resources.findIndex(r => r.id === id);
+  if (idx >= 0) { STORE.resources.splice(idx, 1); showToast('Resource deleted.', 'success'); renderAdmin(); }
+}
+
+// ═══════════════════════════════════════════
+//  SEARCH
+// ═══════════════════════════════════════════
+function liveSearch(query) {
+  const q = query.toLowerCase();
+  document.querySelectorAll('.item-card').forEach(card => {
+    const title  = card.dataset.title  || '';
+    const author = card.dataset.author || '';
+    card.style.display = (title.includes(q) || author.includes(q)) ? '' : 'none';
+  });
+}
+
+// ═══════════════════════════════════════════
+//  MODALS & TOASTS
+// ═══════════════════════════════════════════
+function openModal(id)  { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+let toastTimer;
+function showToast(msg, type = 'success') {
+  const el = document.getElementById('toast');
+  el.textContent = (type === 'success' ? '✅ ' : '❌ ') + msg;
+  el.className = `toast show ${type}`;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { el.classList.remove('show'); }, 3000);
+}
+window.toast = showToast;
+
+// ═══════════════════════════════════════════
+//  HELPERS
+// ═══════════════════════════════════════════
+function escHtml(str) { return String(str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function escAttr(str) { return String(str||'').replace(/"/g,'&quot;'); }
+function formatSize(bytes) {
+  if (bytes >= 1073741824) return (bytes/1073741824).toFixed(1)+' GB';
+  if (bytes >= 1048576)    return (bytes/1048576).toFixed(1)+' MB';
+  if (bytes >= 1024)       return (bytes/1024).toFixed(1)+' KB';
+  return bytes+' B';
+}
+function formatDate(str) {
+  if (!str) return '';
+  const d = new Date(str);
+  return d.toLocaleDateString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});
+}
+function showError(el, msg) { el.textContent = msg; el.style.display = 'block'; }
+function tagsHtml(tags) {
+  if (!tags) return '';
+  return `<div style="margin-top:12px">${tags.split(',').map(t=>`<span class="tag-chip">${escHtml(t.trim())}</span>`).join('')}</div>`;
+}
+
+// Enter key on login
+document.getElementById('login-password').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+
+// Close modal on overlay click
+document.querySelectorAll('.modal-overlay').forEach(overlay => {
+  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.classList.remove('open'); });
+});
+</script>
+</body>
+</html>
